@@ -10,12 +10,28 @@ interface AreaInfo {
   meanIncome: number;
 }
 
+interface ChurchFeature {
+  type: 'Feature';
+  properties: {
+    name: string;
+    area: string;
+    photo: string;
+    description: string;
+  };
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
+}
+
 const App = () => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const geoJsonLayerRef = useRef<L.GeoJSON<any> | null>(null);
+  const churchMarkersRef = useRef<L.Marker[]>([]);
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [curacaoGeoJSON, setCuracaoGeoJSON] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [churchesData, setChurchesData] = useState<ChurchFeature[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [areas, setAreas] = useState<AreaInfo[]>([]);
   const [filteredAreas, setFilteredAreas] = useState<AreaInfo[]>([]);
@@ -28,16 +44,36 @@ const App = () => {
         const data = await response.json();
         setCuracaoGeoJSON(data);
         
-        // Extract area information
-        const areaList: AreaInfo[] = data.features.map((feature: any) => ({
-          name: feature.properties.NAME || 'Unknown',
-          population: feature.properties.pop || 0,
-          households: feature.properties.HH || 0,
-          meanIncome: feature.properties.meanPinc || 0
-        })).sort((a: AreaInfo, b: AreaInfo) => a.name.localeCompare(b.name));
+        // Extract area information (polygons)
+        const areaList: AreaInfo[] = data.features
+          .filter((feature: any) => feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')
+          .map((feature: any) => ({
+            name: feature.properties.NAME || 'Unknown',
+            population: feature.properties.pop || 0,
+            households: feature.properties.HH || 0,
+            meanIncome: feature.properties.meanPinc || 0
+          })).sort((a: AreaInfo, b: AreaInfo) => a.name.localeCompare(b.name));
+        
+        // Extract church information (points)
+        const churchList: ChurchFeature[] = data.features
+          .filter((feature: any) => feature.geometry.type === 'Point')
+          .map((feature: any) => ({
+            type: 'Feature',
+            properties: {
+              name: feature.properties.name || 'Unknown Church',
+              area: feature.properties.area || 'Unknown Area',
+              photo: feature.properties.photo || '',
+              description: feature.properties.description || ''
+            },
+            geometry: {
+              type: 'Point',
+              coordinates: feature.geometry.coordinates
+            }
+          }));
         
         setAreas(areaList);
         setFilteredAreas(areaList);
+        setChurchesData(churchList);
       } catch (error) {
         console.error('Error loading GeoJSON:', error);
       }
@@ -141,6 +177,146 @@ const App = () => {
     }
   };
 
+  // Create church icon
+  const createChurchIcon = () => {
+    return L.divIcon({
+      className: 'church-marker',
+      html: `<div style="
+        background: #dc2626;
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      ">
+        <span style="
+          color: white;
+          font-size: 12px;
+          font-weight: bold;
+        ">⛪</span>
+      </div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+  };
+
+  // Clear existing church markers
+  const clearChurchMarkers = () => {
+    if (mapInstanceRef.current) {
+      churchMarkersRef.current.forEach(marker => {
+        mapInstanceRef.current!.removeLayer(marker);
+      });
+      churchMarkersRef.current = [];
+    }
+  };
+
+  // Show churches for a specific area
+  const showChurchesForArea = (areaName: string) => {
+    if (!mapInstanceRef.current) return;
+
+    // Clear existing markers first
+    clearChurchMarkers();
+
+    // Find churches in the selected area
+    const areaChurches = churchesData.filter(church => 
+      church.properties.area.toUpperCase() === areaName.toUpperCase()
+    );
+
+    // Add markers for each church
+    areaChurches.forEach(church => {
+      const marker = L.marker(
+        [church.geometry.coordinates[1], church.geometry.coordinates[0]], // Note: Leaflet uses [lat, lng]
+        { icon: createChurchIcon() }
+      );
+
+      // Create church popup content
+      const churchPopupContent = `
+        <div style="
+          width: 250px; 
+          max-width: 250px;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          overflow: hidden;
+        ">
+          ${church.properties.photo ? `
+            <div style="
+              width: 100%; 
+              height: 120px; 
+              overflow: hidden; 
+              border-radius: 8px; 
+              margin-bottom: 12px;
+              background: #f3f4f6;
+            ">
+              <img 
+                src="${church.properties.photo}" 
+                alt="${church.properties.name}" 
+                style="
+                  width: 100%; 
+                  height: 100%; 
+                  object-fit: cover;
+                  display: block;
+                " 
+                onerror="this.style.display='none';" 
+              />
+            </div>
+          ` : ''}
+          
+          <h3 style="
+            margin: 0 0 8px 0; 
+            color: #1f2937; 
+            font-size: 16px; 
+            font-weight: 600;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+          ">${church.properties.name}</h3>
+          
+          <div style="
+            color: #6b7280; 
+            font-size: 13px; 
+            line-height: 1.4; 
+            margin-bottom: 8px;
+          ">
+            <strong>Area:</strong> ${church.properties.area}
+          </div>
+          
+          ${church.properties.description ? `
+            <div style="
+              color: #6b7280; 
+              font-size: 13px; 
+              line-height: 1.4;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+            ">
+              ${church.properties.description}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      marker.bindPopup(churchPopupContent, {
+        maxWidth: 270,
+        minWidth: 250,
+        className: 'church-popup'
+      });
+
+      // Add click event to zoom to church marker
+      marker.on('click', () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.setView(
+            [church.geometry.coordinates[1], church.geometry.coordinates[0]], 
+            16, // Zoom level for church detail
+            { animate: true, duration: 0.5 }
+          );
+        }
+      });
+
+      marker.addTo(mapInstanceRef.current!);
+      churchMarkersRef.current.push(marker);
+    });
+  };
+
   // Create popup content with area details from MediaWiki
   const createPopupContent = async (props: any) => {
     const areaName = props.NAME || 'Unknown';
@@ -156,6 +332,11 @@ const App = () => {
     const truncatedExtract = areaInfo.extract.length > maxLength 
       ? areaInfo.extract.substring(0, maxLength) + '...' 
       : areaInfo.extract;
+
+    // Check for churches in this area
+    const areaChurches = churchesData.filter(church => 
+      church.properties.area.toUpperCase() === areaName.toUpperCase()
+    );
     
     return `
       <div style="
@@ -185,14 +366,39 @@ const App = () => {
           />
         </div>
         
-        <h3 style="
-          margin: 0 0 8px 0; 
-          color: #1f2937; 
-          font-size: 16px; 
-          font-weight: 600;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        ">${areaInfo.title}</h3>
+        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+          <h3 style="
+            margin: 0; 
+            color: #1f2937; 
+            font-size: 16px; 
+            font-weight: 600;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            flex: 1;
+          ">${areaInfo.title}</h3>
+          
+          ${areaChurches.length > 0 ? `
+            <button 
+              onclick="window.showChurchesForArea('${areaName}')"
+              style="
+                background: #dc2626;
+                border: none;
+                border-radius: 4px;
+                color: white;
+                padding: 4px 8px;
+                font-size: 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                margin-left: 8px;
+              "
+              title="Show churches in ${areaName}"
+            >
+              ⛪ ${areaChurches.length}
+            </button>
+          ` : ''}
+        </div>
         
         <div style="
           color: #6b7280; 
@@ -420,6 +626,21 @@ const App = () => {
     };
   }, []);
 
+  // Expose function to global window for popup button clicks
+  useEffect(() => {
+    (window as any).showChurchesForArea = (areaName: string) => {
+      // Close any open popups
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.closePopup();
+      }
+      showChurchesForArea(areaName);
+    };
+    
+    return () => {
+      delete (window as any).showChurchesForArea;
+    };
+  }, [churchesData]);
+
   // Update map layer when data loads or area selection changes
   useEffect(() => {
     if (mapInstanceRef.current && curacaoGeoJSON) {
@@ -434,8 +655,14 @@ const App = () => {
         mapInstanceRef.current.removeLayer(geoJsonLayerRef.current);
       }
 
-      // Add new GeoJSON layer with updated styling
-      const geoJsonLayer = L.geoJSON(curacaoGeoJSON, {
+      // Filter to only include polygon features (not points/churches)
+      const polygonFeatures = {
+        ...curacaoGeoJSON,
+        features: curacaoGeoJSON.features.filter(feature => feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')
+      };
+
+      // Add new GeoJSON layer with updated styling (only polygons)
+      const geoJsonLayer = L.geoJSON(polygonFeatures, {
         style: style,
         onEachFeature: onEachFeature
       }).addTo(mapInstanceRef.current);
@@ -520,6 +747,8 @@ const App = () => {
           <li>• Search for areas by name</li>
           <li>• Click on area names to select and zoom</li>
           <li>• Click on map areas for details popup</li>
+          <li>• Click church icon (⛪) to show churches</li>
+          <li>• Click church markers for details</li>
           <li>• Each area has a unique color</li>
         </ul>
       </div>

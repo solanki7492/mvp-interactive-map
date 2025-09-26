@@ -40093,6 +40093,96 @@
         "EditDate": 1455210128569,
         "Editor": "menno_ter_bals"
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Misa di San Pedro (Saint Peter's Church)",
+        "area": "WESTPUNT",
+        "photo": "public/churches/misa-di-san-pedro.png",
+        "description": "The first Catholic church built in Westpoint still stands proud today and is much beloved by the community. Pastor Alphonsus Baak has been our pastor in Westpoint since January 2021 and is always happy to meet with our guests. Visitors of all walks of life are welcome. Please feel free to attend mass with us."
+      },
+      "geometry": { "type": "Point", "coordinates": [-69.15290467774861, 12.36887398576901] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Misa di Lagun",
+        "area": "LAGUN",
+        "photo": "public/churches/misa-di-lagun_orig.png",
+        "description": "Catholic church"
+      },
+      "geometry": { "type": "Point", "coordinates": [-69.15111559459929, 12.320506375383045] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Church of St. Anthony of Padua",
+        "area": "SOTO",
+        "photo": "public/churches/church-of-st-anthony-of-padua.jpeg",
+        "description": "Catholic church"
+      },
+      "geometry": { "type": "Point", "coordinates": [-69.110694064144477, 12.27669968243639] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Church of San Jose",
+        "area": "BARBER",
+        "photo": "public/churches/church-of-san-jose.jpg",
+        "description": "Catholic church"
+      },
+      "geometry": { "type": "Point", "coordinates": [ -69.07290884948058, 12.290325173715775] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Church of Sint Willibrordus",
+        "area": "ST. WILLIBRORDUS",
+        "photo": "public/churches/church-of-sint-willibrordus.jpg",
+        "description": "Catholic church"
+      },
+      "geometry": { "type": "Point", "coordinates": [ -69.0647664664698, 12.21627668157292] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Misa Spiritu Santu Tera Kòrá",
+        "area": "TERA CORA",
+        "photo": "public/churches/misa-spiritu-santu-tera-kora.jpg",
+        "description": "Catholic church"
+      },
+      "geometry": { "type": "Point", "coordinates": [ -69.0296101523854, 12.226204330745988] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Basilica of St. Anne, Willemstad",
+        "area": "RIF BIJ OTROBANDA",
+        "photo": "public/churches/basilica-of-st-anne-willemstad.jpg",
+        "description": "Catholic church"
+      },
+      "geometry": { "type": "Point", "coordinates": [ -68.93652696343214, 12.10846680038637] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Fort Church",
+        "area": "PUNDA",
+        "photo": "public/churches/fort-church.jpg",
+        "description": "Catholic church"
+      },
+      "geometry": { "type": "Point", "coordinates": [ -68.93436781118866, 12.104604419935107] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Queen of the Most Holy Rosary Cathedral",
+        "area": "PIETERMAAI",
+        "photo": "public/churches/queen-of-the-most-holy-rosary-cathedral.jpg",
+        "description": "Katedral di Pietermaai"
+      },
+      "geometry": { "type": "Point", "coordinates": [ -68.92474030430385, 12.103176519387581] }
     }
   ]
 }

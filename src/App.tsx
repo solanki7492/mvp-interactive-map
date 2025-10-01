@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Search, ChevronDown } from "lucide-react";
 
 // Define types
 interface AreaInfo {
@@ -35,6 +36,7 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [areas, setAreas] = useState<AreaInfo[]>([]);
   const [filteredAreas, setFilteredAreas] = useState<AreaInfo[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Load GeoJSON data
   useEffect(() => {
@@ -674,84 +676,86 @@ const App = () => {
   return (
     <div className="w-full h-screen relative bg-gray-50">
       {/* Search Panel */}
-      <div className="fixed top-4 left-4 z-[1000] bg-white p-4 rounded-lg shadow-lg max-w-sm pointer-events-auto">
-        <h3 className="text-lg font-bold mb-4 text-gray-800">Curacao Areas</h3>
-        
-        {/* Search Box */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Search Areas:
-          </label>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Type area name..."
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      <div className="fixed top-3 left-3 z-[1000] bg-white p-4 rounded-lg shadow-lg max-w-sm pointer-events-auto">
+        {/* Header with Toggle */}
+        <div
+          className="flex justify-between items-center cursor-pointer gap-2"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <h3 className="text-lg font-bold text-gray-800">
+            Curaçao Neighborhoods
+          </h3>
+          <ChevronDown
+            className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${
+              isOpen ? "rotate-180" : ""
+            }`}
           />
         </div>
 
-        {/* Selected Area */}
-        {selectedArea && (
-          <div className="mb-4 p-2 bg-green-50 rounded border-l-4 border-green-400">
-            <p className="text-sm text-green-800">
-              <strong>Selected:</strong> {selectedArea}
-            </p>
-          </div>
-        )}
+        {/* Collapsible Content */}
+        {isOpen && (
+          <div className="mt-4">
+            {/* Search Box */}
+            <div className="relative mb-4">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="w-4 h-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search..."
+                className="w-full pl-9 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
 
-        {/* Area List */}
-        <div className="max-h-96 overflow-y-auto">
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">
-            Areas ({filteredAreas.length})
-          </h4>
-          <div className="space-y-1">
-            {filteredAreas.map((area) => (
-              <div
-                key={area.name}
-                onClick={async () => {
-                  const layer = findAreaLayer(area.name);
-                  await selectArea(area.name, layer || undefined);
-                }}
-                className={`p-2 rounded cursor-pointer text-sm transition-colors ${
-                  selectedArea === area.name
-                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                }`}
-              >
-                <div className="flex items-center">
+            {/* Selected Area */}
+            {selectedArea && (
+              <div className="mb-4 p-2 bg-green-50 rounded border-l-4 border-green-400">
+                <p className="text-sm text-green-800">
+                  <strong>Selected:</strong> {selectedArea}
+                </p>
+              </div>
+            )}
+
+            {/* Area List */}
+            <div className="max-h-96 overflow-y-auto">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                Total ({filteredAreas.length})
+              </h4>
+              <div className="space-y-1">
+                {filteredAreas.map((area) => (
                   <div
-                    className="w-3 h-3 rounded-full mr-2"
-                    style={{ backgroundColor: getAreaColor(area.name) }}
-                  ></div>
-                  <div className="flex-1">
-                    <div className="font-medium">{area.name}</div>
-                    <div className="text-xs text-gray-500">
-                      Pop: {area.population.toLocaleString()} | HH: {area.households.toLocaleString()}
+                    key={area.name}
+                    onClick={async () => {
+                      const layer = findAreaLayer(area.name);
+                      await selectArea(area.name, layer || undefined);
+                      setIsOpen(false);
+                    }}
+                    className={`p-2 rounded cursor-pointer text-sm transition-colors ${
+                      selectedArea === area.name
+                        ? "bg-blue-100 text-blue-800 border border-blue-300"
+                        : "bg-gray-50 hover:bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <div
+                        className="w-3 h-3 rounded-full mr-2"
+                        style={{ backgroundColor: getAreaColor(area.name) }}
+                      ></div>
+                      <div className="flex-1">
+                        <div className="font-medium">{area.name}</div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
-
       {/* Map Container */}
       <div ref={mapRef} className="w-full h-full z-0" />
-
-      {/* Instructions */}
-      <div className="fixed bottom-4 right-4 z-[1000] bg-white p-3 rounded-lg shadow-lg max-w-xs pointer-events-auto">
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">Instructions:</h4>
-        <ul className="text-xs text-gray-600 space-y-1">
-          <li>• Search for areas by name</li>
-          <li>• Click on area names to select and zoom</li>
-          <li>• Click on map areas for details popup</li>
-          <li>• Click church icon (⛪) to show churches</li>
-          <li>• Click church markers for details</li>
-          <li>• Each area has a unique color</li>
-        </ul>
-      </div>
     </div>
   );
 };

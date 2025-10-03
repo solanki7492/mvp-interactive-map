@@ -611,11 +611,17 @@ const App = () => {
   // Initialize map
   useEffect(() => {
     if (!mapInstanceRef.current && mapRef.current) {
-      const map = L.map(mapRef.current).setView([12.1696, -68.9900], 11);
+      const map = L.map(mapRef.current,{
+        zoomControl: false,
+      }).setView([12.1696, -68.9900], 11);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
+
+       L.control.zoom({
+          position: 'bottomright'
+        }).addTo(map);
 
       mapInstanceRef.current = map;
     }
